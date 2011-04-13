@@ -1,0 +1,13 @@
+name: bMobs
+main: com.bradsproject.BradleyJewell.bMobs.bMobs
+version: 0.5.7
+description: Controls which enemies can spawn or attack you.
+authors:
+  - Brad811
+commands:
+  bkill:
+    description: Kills all creatures of the specified type.
+    usage: /<command> [type]
+  bmobsreload:
+    description: Reloads the configuration file for bMobs.
+    usage: /<command>
