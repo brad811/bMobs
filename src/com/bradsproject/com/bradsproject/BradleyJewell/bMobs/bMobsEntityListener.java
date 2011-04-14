@@ -30,13 +30,18 @@ public class bMobsEntityListener extends EntityListener
 	@Override
 	public void onCreatureSpawn(CreatureSpawnEvent event)
 	{
-		//event.getEntity().getWorld();
 		World world = event.getLocation().getWorld();
-		bMobsWorld w = plugin.worlds.get(world.getName());
+		bMobsWorld w = plugin.worlds.get(world.getName());		
 		String mobType = event.getCreatureType().name().replace("_", "").toLowerCase();
-		if(!w.active.contains(mobType))
+		
+		try {
+			if(!w.active.contains(mobType))
+			{
+				event.setCancelled(true);
+			}
+		}catch(NullPointerException e)
 		{
-			event.setCancelled(true);
+			// the world hasn't finished loading yet!
 		}
 	}
 }

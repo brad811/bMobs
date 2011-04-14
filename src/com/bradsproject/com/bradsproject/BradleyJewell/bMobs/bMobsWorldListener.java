@@ -3,8 +3,8 @@ package com.bradsproject.BradleyJewell.bMobs;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import org.bukkit.event.world.WorldEvent;
 import org.bukkit.event.world.WorldListener;
+import org.bukkit.event.world.WorldLoadEvent;
 
 public class bMobsWorldListener extends WorldListener
 {
@@ -16,7 +16,7 @@ public class bMobsWorldListener extends WorldListener
 	}
 	
 	@Override
-	public void onWorldLoad(WorldEvent event)
+	public void onWorldLoad(WorldLoadEvent event)
 	{
 		try
 		{
