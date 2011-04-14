@@ -83,6 +83,7 @@ public class bMobs extends JavaPlugin
 			        out.write("sheep\n");
 			        out.write("pig\n");
 			        out.write("squid\n");
+			        out.write("wolf\n");
 			        out.write("\n");
 		        }
 		        
@@ -231,6 +232,7 @@ public class bMobs extends JavaPlugin
         out.write("sheep\n");
         out.write("pig\n");
         out.write("squid\n");
+        out.write("wolf\n");
         out.write("\n");
         
         worlds.put(w.getName(), new bMobsWorld(this,w));
@@ -254,7 +256,8 @@ public class bMobs extends JavaPlugin
 		||(entity instanceof Cow && !w.active.contains("cow"))
 		||(entity instanceof Sheep && !w.active.contains("sheep"))
 		||(entity instanceof Pig && !w.active.contains("pig"))
-		||(entity instanceof Squid && !w.active.contains("squid")))
+		||(entity instanceof Squid && !w.active.contains("squid"))
+		||(entity instanceof Wolf && !w.active.contains("wolf")))
 		{
 			entity.remove();
 		}
