@@ -314,22 +314,30 @@ public class bMobs extends JavaPlugin
 				player.sendMessage("You do not have permission to use that command.");
 				return false;
 			}
-			if(args[0].equalsIgnoreCase("monsters") || args[0].equalsIgnoreCase("mobs"))
+			try {
+				if(args[0].equalsIgnoreCase("monsters") || args[0].equalsIgnoreCase("mobs"))
+				{
+					kill(player.getWorld(), "monsters");
+					player.sendMessage("All monsters have been killed!");
+					return true;
+				}
+				else if(args[0].equalsIgnoreCase("animals"))
+				{
+					kill(player.getWorld(), "animals");
+					player.sendMessage("All animals have been killed!");
+					return true;
+				}
+				else if(args[0].equalsIgnoreCase("all"))
+				{
+					kill(player.getWorld(), "all");
+					player.sendMessage("All creatures have been killed!");
+					return true;
+				}
+			}
+			catch(NullPointerException e)
 			{
 				kill(player.getWorld(), "monsters");
-				player.sendMessage("All monsters have been killed!");
-				return true;
-			}
-			else if(args[0].equalsIgnoreCase("animals"))
-			{
-				kill(player.getWorld(), "animals");
-				player.sendMessage("All animals have been killed!");
-				return true;
-			}
-			else if(args[0].equalsIgnoreCase("all"))
-			{
-				kill(player.getWorld(), "all");
-				player.sendMessage("All creatures have been killed!");
+				player.sendMessage("All monsters have been killed! (e)");
 				return true;
 			}
 		}
