@@ -18,11 +18,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
 
-import org.anjocaido.groupmanager.permissions.AnjoPermissionsHandler;
+import com.nijiko.permissions.PermissionHandler;
+import com.nijikokun.bukkit.Permissions.Permissions;
 
 /**
  * bMobs for Bukkit
@@ -33,7 +35,7 @@ public class bMobs extends JavaPlugin
 {
 	private final bMobsEntityListener entityListener = new bMobsEntityListener(this);
 	private final bMobsWorldListener worldListener = new bMobsWorldListener(this);
-	public static AnjoPermissionsHandler Permissions = null;
+	public static PermissionHandler Permissions = null;
 	Server server;
 	Map<String, bMobsWorld> worlds = new HashMap<String, bMobsWorld>();
 	
@@ -44,6 +46,8 @@ public class bMobs extends JavaPlugin
 		pm.registerEvent(Event.Type.ENTITY_TARGET, entityListener, Priority.Normal, this);
 		pm.registerEvent(Event.Type.CREATURE_SPAWN, entityListener, Priority.Normal, this);
 		pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Normal, this);
+		
+		setupPermissions();
 		
 		try
 		{
@@ -120,6 +124,22 @@ public class bMobs extends JavaPlugin
 		// EXAMPLE: Custom code, here we just output some info so we can check
 		// all is well
 		System.out.println("bMobs has been disabled!");
+	}
+	
+	public void setupPermissions()
+	{
+		Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
+		
+		if(bMobs.Permissions == null)
+		{
+			if(test != null)
+			{
+				bMobs.Permissions = ((Permissions) test).getHandler();
+			} else
+			{
+				
+			}
+		}
 	}
 	
 	public void parseProperties() throws FileNotFoundException, IOException
