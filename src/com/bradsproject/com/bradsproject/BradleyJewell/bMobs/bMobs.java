@@ -22,7 +22,7 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
 
-import com.nijiko.permissions.PermissionHandler;
+import org.anjocaido.groupmanager.permissions.AnjoPermissionsHandler;
 
 /**
  * bMobs for Bukkit
@@ -33,7 +33,7 @@ public class bMobs extends JavaPlugin
 {
 	private final bMobsEntityListener entityListener = new bMobsEntityListener(this);
 	private final bMobsWorldListener worldListener = new bMobsWorldListener(this);
-	public static PermissionHandler Permissions = null;
+	public static AnjoPermissionsHandler Permissions = null;
 	Server server;
 	Map<String, bMobsWorld> worlds = new HashMap<String, bMobsWorld>();
 	
