@@ -1,6 +1,6 @@
 name: bMobs
 main: com.bradsproject.BradleyJewell.bMobs.bMobs
-version: 1.0
+version: 1.1
 description: Controls which enemies can spawn or attack you.
 authors:
   - Brad811

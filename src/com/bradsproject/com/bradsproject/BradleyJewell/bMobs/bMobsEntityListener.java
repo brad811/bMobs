@@ -56,7 +56,7 @@ public class bMobsEntityListener extends EntityListener
 		Entity entity = event.getEntity();
 		if(entity instanceof Player)
 			return;
-		if(!plugin.shouldBurn(entity))
+		if(!plugin.canBurn(entity))
 		{
 			event.setCancelled(true);
 		}

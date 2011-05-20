@@ -210,14 +210,14 @@ public class bMobs extends JavaPlugin
 		int numKilled = 0;
 		for(LivingEntity m : mobs)
 		{
-			if(type.equals("animals") || type.equals("all"))
+			if(type.equals("monsters") || type.equals("animals") || type.equals("all"))
 			{
-				if(isAnimal(m))
+				if(isAnimal(m) && (type.equals("animals") || type.equals("all")))
 				{
 					m.remove();
 					numKilled++;
 				}
-				else if(isMonster(m))
+				else if(isMonster(m) && type.equals("monsters") || type.equals("all"))
 				{
 					m.remove();
 					numKilled++;
@@ -237,19 +237,46 @@ public class bMobs extends JavaPlugin
 	
 	public boolean shouldBurn(Entity entity)
 	{
-		for(Mob mob : worlds.get(entity.getWorld().getName()).mobs)
-		{
-			if(mob.type.equals(entity.toString().toLowerCase().replace("craft", "")))
+		try {
+			for(Mob mob : worlds.get(entity.getWorld().getName()).mobs)
 			{
-				if(mob.burn && isInSunlight(entity))
+				if(mob.type.equals(entity.toString().toLowerCase().replace("craft", "")))
 				{
-					return true;
-				}
-				else
-				{
-					return false;
+					if(mob.burn && isInSunlight(entity))
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
 				}
 			}
+		} catch(NullPointerException e)
+		{
+		}
+		return false;
+	}
+	
+	public boolean canBurn(Entity entity)
+	{
+		try {
+			for(Mob mob : worlds.get(entity.getWorld().getName()).mobs)
+			{
+				if(mob.type.equals(entity.toString().toLowerCase().replace("craft", "")))
+				{
+					if(mob.burn && isInSunlight(entity))
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+			}
+		} catch(NullPointerException e)
+		{
 		}
 		return true;
 	}
@@ -295,7 +322,13 @@ public class bMobs extends JavaPlugin
 				return false;
 			}
 			try {
-				if(args[0].equalsIgnoreCase("monsters") || args[0].equalsIgnoreCase("mobs"))
+				if(args.length == 0)
+				{
+					int numKilled = kill(player.getWorld(), "monsters");
+					player.sendMessage("All "+ numKilled +" monsters have been killed!");
+					return true;
+				}
+				else if(args[0].equalsIgnoreCase("monsters") || args[0].equalsIgnoreCase("mobs"))
 				{
 					int numKilled = kill(player.getWorld(), "monsters");
 					player.sendMessage("All "+ numKilled +" monsters have been killed!");
