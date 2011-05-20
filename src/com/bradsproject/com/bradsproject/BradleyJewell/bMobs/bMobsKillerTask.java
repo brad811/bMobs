@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 
 public class bMobsKillerTask implements Runnable
 {
@@ -24,12 +25,18 @@ public class bMobsKillerTask implements Runnable
 			List<LivingEntity> entities = world.getValue().world.getLivingEntities();
 			for(LivingEntity entity : entities)
 			{
+				if(entity instanceof Player)
+					continue;
+				
 				if(!plugin.handleEntity(entity, world.getValue().world))
 				{
 					// check to burn the mob
+					if(plugin.shouldBurn(entity))
+					{
+						entity.setFireTicks(100);
+					}
 				}
 			}
 		}
 	}
-	
 }

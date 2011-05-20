@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -46,14 +48,17 @@ public class bMobs extends JavaPlugin
 		PluginManager pm = getServer().getPluginManager();
 		pm.registerEvent(Event.Type.ENTITY_TARGET, entityListener, Priority.Normal, this);
 		pm.registerEvent(Event.Type.CREATURE_SPAWN, entityListener, Priority.Normal, this);
+		pm.registerEvent(Event.Type.ENTITY_COMBUST, entityListener, Priority.Normal, this);
+		
 		pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Normal, this);
+		
 		
 		setupPermissions();
 		
 		parseConfig();
 		
-		long delay = 200L;
-		long period = 200L;
+		long delay = 10L;
+		long period = 10L;
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new bMobsKillerTask(this), delay, period);
 		
 		// EXAMPLE: Custom code, here we just output some info so we can check
@@ -199,9 +204,10 @@ public class bMobs extends JavaPlugin
 		return false;
 	}
 	
-	public void kill(World world, String type)
+	public int kill(World world, String type)
 	{
 		List<LivingEntity> mobs = world.getLivingEntities();
+		int numKilled = 0;
 		for(LivingEntity m : mobs)
 		{
 			if(type.equals("animals") || type.equals("all"))
@@ -209,10 +215,12 @@ public class bMobs extends JavaPlugin
 				if(isAnimal(m))
 				{
 					m.remove();
+					numKilled++;
 				}
 				else if(isMonster(m))
 				{
 					m.remove();
+					numKilled++;
 				}
 			}
 			else
@@ -220,9 +228,47 @@ public class bMobs extends JavaPlugin
 				if(isEntityMatch(m, type))
 				{
 					m.remove();
+					numKilled++;
 				}
 			}
 		}
+		return numKilled;
+	}
+	
+	public boolean shouldBurn(Entity entity)
+	{
+		for(Mob mob : worlds.get(entity.getWorld().getName()).mobs)
+		{
+			if(mob.type.equals(entity.toString().toLowerCase().replace("craft", "")))
+			{
+				if(mob.burn && isInSunlight(entity))
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+	
+	public boolean isInSunlight(Entity entity)
+	{
+		for(int y = 127; y > entity.getLocation().getY() + 2; y--)
+		{
+			Location loc = new Location(entity.getWorld(), entity.getLocation().getX(), y, entity.getLocation().getZ());
+			if(entity.getWorld().getBlockAt(loc).getType() != Material.AIR
+					&& entity.getWorld().getBlockAt(loc).getType() != Material.GLASS)
+			{
+				return false;
+			}
+		}
+		if(entity.getLocation().getBlock().getLightLevel() < 15)
+			return false;
+		
+		return true;
 	}
 	
 	public void reload()
@@ -251,39 +297,39 @@ public class bMobs extends JavaPlugin
 			try {
 				if(args[0].equalsIgnoreCase("monsters") || args[0].equalsIgnoreCase("mobs"))
 				{
-					kill(player.getWorld(), "monsters");
-					player.sendMessage("All monsters have been killed!");
+					int numKilled = kill(player.getWorld(), "monsters");
+					player.sendMessage("All "+ numKilled +" monsters have been killed!");
 					return true;
 				}
 				else if(args[0].equalsIgnoreCase("animals"))
 				{
-					kill(player.getWorld(), "animals");
-					player.sendMessage("All animals have been killed!");
+					int numKilled = kill(player.getWorld(), "animals");
+					player.sendMessage("All "+ numKilled +" animals have been killed!");
 					return true;
 				}
 				else if(args[0].equalsIgnoreCase("all"))
 				{
-					kill(player.getWorld(), "all");
-					player.sendMessage("All creatures have been killed!");
+					int numKilled = kill(player.getWorld(), "all");
+					player.sendMessage("All "+ numKilled +" creatures have been killed!");
 					return true;
 				}
 				else
 				{
-					kill(player.getWorld(), args[0].toLowerCase());
-					player.sendMessage("All "+ args[0].toLowerCase() +"(s) have been killed!");
+					int numKilled = kill(player.getWorld(), args[0].toLowerCase());
+					player.sendMessage("All "+ numKilled +" "+ args[0].toLowerCase() +"(s) have been killed!");
 					return true;
 				}
 			}
 			catch(CommandException e)
 			{
-				kill(player.getWorld(), "monsters");
-				player.sendMessage("All monsters have been killed!");
+				int numKilled = kill(player.getWorld(), "monsters");
+				player.sendMessage("All "+ numKilled +" monsters have been killed!");
 				return true;
 			}
 			catch(NullPointerException e)
 			{
-				kill(player.getWorld(), "monsters");
-				player.sendMessage("All monsters have been killed!");
+				int numKilled = kill(player.getWorld(), "monsters");
+				player.sendMessage("All "+ numKilled +" monsters have been killed!");
 				return true;
 			}
 		}
