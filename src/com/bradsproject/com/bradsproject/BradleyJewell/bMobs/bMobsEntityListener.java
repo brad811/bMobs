@@ -1,5 +1,7 @@
 package com.bradsproject.BradleyJewell.bMobs;
 
+import java.util.Random;
+
 import org.bukkit.World;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -24,7 +26,25 @@ public class bMobsEntityListener extends EntityListener
 	public void onEntityTarget(EntityTargetEvent event)
 	{
 		LivingEntity entity = (LivingEntity) event.getEntity();
-		plugin.handleEntity(entity, entity.getWorld());
+		if(!plugin.handleEntity(entity, entity.getWorld()))
+		{ // if the entity was not removed...
+			World world = entity.getLocation().getWorld();
+			bMobsWorld w = plugin.worlds.get(world.getName());
+			w.mobs = w.mobs;
+			String mobType = entity.toString().replace("Craft", "").toLowerCase();
+			
+			for(Mob mob : w.mobs)
+			{
+				if(mob.type.equals(mobType))
+				{
+					if(mob.aggressive == false)
+					{
+						event.setCancelled(true);
+						return;
+					}
+				}
+			}
+		}
 	}
 	
 	@Override
@@ -35,9 +55,31 @@ public class bMobsEntityListener extends EntityListener
 		String mobType = event.getCreatureType().name().replace("_", "").toLowerCase();
 		
 		try {
-			if(!w.active.contains(mobType))
+			if(!w.isMobEnabled(mobType))
 			{
 				event.setCancelled(true);
+				return;
+			}
+			else
+			{
+				for(Mob mob : w.mobs)
+				{
+					if(mob.type.equals(mobType))
+					{
+						Random rand = new Random();
+						int x = rand.nextInt(10) + 1;
+						if(x > mob.probability * 10)
+						{
+							event.setCancelled(true);
+							return;
+						}
+						else if(mob.health != -1)
+						{
+							LivingEntity entity = (LivingEntity) event.getEntity();
+							entity.setHealth(mob.health);
+						}
+					}
+				}
 			}
 		}catch(NullPointerException e)
 		{

@@ -1,12 +1,9 @@
 package com.bradsproject.BradleyJewell.bMobs;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +11,7 @@ import java.util.Map;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandException;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event.Priority;
@@ -22,6 +20,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
@@ -38,6 +38,7 @@ public class bMobs extends JavaPlugin
 	public static PermissionHandler Permissions = null;
 	Server server;
 	Map<String, bMobsWorld> worlds = new HashMap<String, bMobsWorld>();
+	Yaml yaml;
 	
 	public void onEnable()
 	{
@@ -49,61 +50,7 @@ public class bMobs extends JavaPlugin
 		
 		setupPermissions();
 		
-		try
-		{
-			parseProperties();
-		} catch (FileNotFoundException e)
-		{
-			System.out.println("bMobs.properties file not found. Generating...");
-			FileWriter fstream;
-			try
-			{
-				try {
-					fstream = new FileWriter("plugins/bMobs/bMobs.properties");
-				} catch(FileNotFoundException e1)
-				{
-					File f = new File("plugins/bMobs");
-					f.mkdir();
-					System.out.println(f.getAbsolutePath());
-					fstream = new FileWriter("plugins/bMobs/bMobs.properties");
-				}
-				BufferedWriter out = new BufferedWriter(fstream);
-		        out.write("# List of creatures that will not be removed (start line with # to disable)\n");
-		        
-		        List<World> worldss = getServer().getWorlds();
-		        for(World w : worldss)
-		        {
-		        	out.write("world:"+w.getName() + "\n");
-			        out.write("#creeper\n");
-			        out.write("skeleton\n");
-			        out.write("#spider\n");
-			        out.write("zombie\n");
-			        out.write("#ghast\n");
-			        out.write("#giant\n");
-			        out.write("pigzombie\n");
-			        out.write("#slime\n");
-			        out.write("chicken\n");
-			        out.write("cow\n");
-			        out.write("sheep\n");
-			        out.write("pig\n");
-			        out.write("squid\n");
-			        out.write("wolf\n");
-			        out.write("\n");
-		        }
-		        
-		        out.close();
-		        parseProperties();
-			} catch (FileNotFoundException e1)
-			{
-				e1.printStackTrace();
-			} catch (IOException e1)
-			{
-				e1.printStackTrace();
-			}
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		}
+		parseConfig();
 		
 		long delay = 200L;
 		long period = 200L;
@@ -118,11 +65,6 @@ public class bMobs extends JavaPlugin
 	
 	public void onDisable()
 	{
-		// NOTE: All registered events are automatically unregistered when a
-		// plugin is disabled
-		
-		// EXAMPLE: Custom code, here we just output some info so we can check
-		// all is well
 		System.out.println("bMobs has been disabled!");
 	}
 	
@@ -142,145 +84,91 @@ public class bMobs extends JavaPlugin
 		}
 	}
 	
-	public void parseProperties() throws FileNotFoundException, IOException
+	@SuppressWarnings("unchecked")
+	public void parseConfig()
 	{
-		BufferedReader in = new BufferedReader(new FileReader("plugins/bMobs/bMobs.properties"));
-		String str;
-		bMobsWorld w = null;
-		while((str = in.readLine()) != null)
-		{
-			if(str.isEmpty() || str.substring(0, 1).equals("#"))
-				continue;
+		yaml = new Yaml(new SafeConstructor());
+		try {
+			InputStream input = new FileInputStream(new File("plugins/bMobs/bMobs.yml"));
+			Map<String, Object> map = (Map<String, Object>) yaml.load(input);
+			Map<String, Object> worldsNode = (Map<String, Object>) map.get("worlds");
 			
-			String[] split = str.split(":");
-			if(split[0].equals("world"))
+			for(String worldsKey: worldsNode.keySet())
 			{
-				if(w != null)
+				Map<String, Object> worldNode = (Map<String, Object>) worldsNode.get(worldsKey);
+				bMobsWorld w = new bMobsWorld(getServer().getWorld(worldsKey));
+				for(String worldKey: worldNode.keySet())
 				{
-					try {
-						System.out.println("bMobs got world: " + w.world.getName());
-						worlds.put(w.world.getName(), w);
-					} catch(NullPointerException e)
+					Mob mob = new Mob(worldKey);
+					Map<String, Object> value = (Map<String, Object>) worldNode.get(worldKey);
+					
+					if(value.containsKey("enabled"))
 					{
-						System.out.println("Problem getting worlds from server! Try running \"/bmobsreload\" once server is finished starting up.");
-						return;
+						mob.enabled = Boolean.parseBoolean(value.get("enabled").toString());
 					}
+					
+					if(value.containsKey("probability"))
+					{
+						mob.probability = Double.parseDouble(value.get("probability").toString());
+						if(mob.probability <= 0)
+							mob.enabled = false;
+						else if(mob.probability > 1)
+							mob.probability = 1;
+					}
+					
+					if(value.containsKey("aggressive"))
+					{
+						mob.aggressive = Boolean.parseBoolean(value.get("aggressive").toString());
+					}
+					
+					if(value.containsKey("burn"))
+					{
+						mob.burn = Boolean.parseBoolean(value.get("burn").toString());
+					}
+					
+					if(value.containsKey("health"))
+					{
+						mob.health = Integer.parseInt(value.get("health").toString());
+						if(mob.health < 0)
+							mob.health = 0;
+						else if(mob.health > 200)
+							mob.health = 200;
+					}
+					
+					w.mobs.add(mob);
 				}
-				w = new bMobsWorld(this, getServer().getWorld(split[1]));
-				continue;
+				worlds.put(worldsKey, w);
 			}
-			if(w != null)
-				w.active.add(str.toLowerCase());
+		} catch(FileNotFoundException e)
+		{
+			System.out.println("bMobs configuration file not found.");
+			this.getPluginLoader().disablePlugin(this);
 		}
-		try {
-			worlds.put(w.world.getName(), w);
-		}
-		catch (NullPointerException e){
-			System.out.println("bMobs could not process one of your worlds properly! Check that your properties file is properly formatted.");
-		}
-		in.close();
 	}
 	
-	public void reload() throws FileNotFoundException, IOException
-	{
-		BufferedReader in = new BufferedReader(new FileReader("plugins/bMobs/bMobs.properties"));
-		String str;
-		bMobsWorld w = null;
-		worlds.clear();
-		while((str = in.readLine()) != null)
-		{
-			if(str.isEmpty() || str.substring(0, 1).equals("#"))
-				continue;
-			
-			String[] split = str.split(":");
-			if(split[0].equals("world"))
-			{
-				try {
-				if(w != null)
-					worlds.put(w.world.getName(), w);
-				
-				w = new bMobsWorld(this, getServer().getWorld(split[1]));
-				System.out.println("bMobs processing world: " + w.world.getName());
-				continue;
-				} catch(NullPointerException e)
-				{
-					//
-				}
-			}
-			try {
-				w.active.add(str.toLowerCase());
-			} catch(NullPointerException e)
-			{
-				System.out.println("Improperly formatted bMobs.properties file!");
-			}
-		}
-		try {
-			worlds.put(w.world.getName(), w);
-		}catch(NullPointerException e)
-		{
-			System.out.println("bMobs could not access a world yet! It may still be loading.");
-		}
-		in.close();
-		
-		for(World world : getServer().getWorlds())
-		{
-			if(!worlds.containsKey(world.getName()))
-			{
-				addWorld(world);
-			}
-		}
-		
-	}
-	
-	public void addWorld(World w) throws IOException
-	{
-		System.out.println("bMobs adding world: " + w.getName());
-		
-		FileWriter fstream = new FileWriter("plugins/bMobs/bMobs.properties", true);
-		BufferedWriter out = new BufferedWriter(fstream);
-		out.write("world:"+w.getName() + "\n");
-        out.write("#creeper\n");
-        out.write("skeleton\n");
-        out.write("#spider\n");
-        out.write("zombie\n");
-        out.write("#ghast\n");
-        out.write("#giant\n");
-        out.write("pigzombie\n");
-        out.write("#slime\n");
-        out.write("chicken\n");
-        out.write("cow\n");
-        out.write("sheep\n");
-        out.write("pig\n");
-        out.write("squid\n");
-        out.write("wolf\n");
-        out.write("\n");
-        
-        worlds.put(w.getName(), new bMobsWorld(this,w));
-        
-        out.close();
-        fstream.close();
-	}
-	
-	public void handleEntity(LivingEntity entity, World world)
+	public boolean handleEntity(LivingEntity entity, World world)
 	{
 		bMobsWorld w = worlds.get(world.getName());
-		if((entity instanceof Creeper && !w.active.contains("creeper"))
-		||(entity instanceof Skeleton && !w.active.contains("skeleton"))
-		||(entity instanceof Spider && !w.active.contains("spider"))
-		||(entity instanceof Zombie && !w.active.contains("zombie"))
-		||(entity instanceof Ghast && !w.active.contains("ghast"))
-		||(entity instanceof PigZombie && !w.active.contains("pigzombie"))
-		||(entity instanceof Giant && !w.active.contains("giant"))
-		||(entity instanceof Slime && !w.active.contains("slime"))
-		||(entity instanceof Chicken && !w.active.contains("chicken"))
-		||(entity instanceof Cow && !w.active.contains("cow"))
-		||(entity instanceof Sheep && !w.active.contains("sheep"))
-		||(entity instanceof Pig && !w.active.contains("pig"))
-		||(entity instanceof Squid && !w.active.contains("squid"))
-		||(entity instanceof Wolf && !w.active.contains("wolf")))
+		
+		if((entity instanceof Creeper && !w.isMobEnabled("creeper"))
+		||(entity instanceof Skeleton && !w.isMobEnabled("skeleton"))
+		||(entity instanceof Spider && !w.isMobEnabled("spider"))
+		||(entity instanceof Zombie && !w.isMobEnabled("zombie"))
+		||(entity instanceof Ghast && !w.isMobEnabled("ghast"))
+		||(entity instanceof PigZombie && !w.isMobEnabled("pigzombie"))
+		||(entity instanceof Giant && !w.isMobEnabled("giant"))
+		||(entity instanceof Slime && !w.isMobEnabled("slime"))
+		||(entity instanceof Chicken && !w.isMobEnabled("chicken"))
+		||(entity instanceof Cow && !w.isMobEnabled("cow"))
+		||(entity instanceof Sheep && !w.isMobEnabled("sheep"))
+		||(entity instanceof Pig && !w.isMobEnabled("pig"))
+		||(entity instanceof Squid && !w.isMobEnabled("squid"))
+		||(entity instanceof Wolf && !w.isMobEnabled("wolf")))
 		{
 			entity.remove();
+			return true;
 		}
+		return false;
 	}
 	
 	public boolean isMonster(LivingEntity e)
@@ -301,20 +189,46 @@ public class bMobs extends JavaPlugin
 		return false;
 	}
 	
+	public boolean isEntityMatch(LivingEntity e, String type)
+	{
+		String mobType = e.toString().toLowerCase().replace("craft", "");
+		if(mobType.equals(type))
+		{
+			return true;
+		}
+		return false;
+	}
+	
 	public void kill(World world, String type)
 	{
 		List<LivingEntity> mobs = world.getLivingEntities();
 		for(LivingEntity m : mobs)
 		{
-			if(isAnimal(m) && (type.equals("animals") || type.equals("all")))
+			if(type.equals("animals") || type.equals("all"))
 			{
-				m.remove();
+				if(isAnimal(m))
+				{
+					m.remove();
+				}
+				else if(isMonster(m))
+				{
+					m.remove();
+				}
 			}
-			else if(isMonster(m) && (type.equals("monsters") || type.equals("all")))
+			else
 			{
-				m.remove();
+				if(isEntityMatch(m, type))
+				{
+					m.remove();
+				}
 			}
 		}
+	}
+	
+	public void reload()
+	{
+		worlds.clear();
+		parseConfig();
 	}
 	
 	@Override
@@ -353,11 +267,23 @@ public class bMobs extends JavaPlugin
 					player.sendMessage("All creatures have been killed!");
 					return true;
 				}
+				else
+				{
+					kill(player.getWorld(), args[0].toLowerCase());
+					player.sendMessage("All "+ args[0].toLowerCase() +"(s) have been killed!");
+					return true;
+				}
+			}
+			catch(CommandException e)
+			{
+				kill(player.getWorld(), "monsters");
+				player.sendMessage("All monsters have been killed!");
+				return true;
 			}
 			catch(NullPointerException e)
 			{
 				kill(player.getWorld(), "monsters");
-				player.sendMessage("All monsters have been killed! (e)");
+				player.sendMessage("All monsters have been killed!");
 				return true;
 			}
 		}
@@ -369,20 +295,10 @@ public class bMobs extends JavaPlugin
 				player.sendMessage("You do not have permission to use that command.");
 				return false;
 			}
-			try
-			{
-				reload();
-				player.sendMessage("bMobs properties have been reloaded!");
-				return true;
-			} catch (FileNotFoundException e)
-			{
-				System.out.println("bMobs Error: properties file not found!");
-				return false;
-			} catch (IOException e)
-			{
-				System.out.println("bMobs Error: problem reloading properties file!");
-				return false;
-			}
+			
+			reload();
+			player.sendMessage("bMobs properties have been reloaded!");
+			return true;
 		}
 		return false;
 	}

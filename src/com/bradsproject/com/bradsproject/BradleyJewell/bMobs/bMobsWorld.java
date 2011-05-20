@@ -7,14 +7,26 @@ import org.bukkit.World;
 
 public class bMobsWorld
 {
-	public final bMobs plugin;
-	public List<String> active = new ArrayList<String>();
 	public final World world;
+	public List<Mob> mobs = new ArrayList<Mob>();
 	
-	public bMobsWorld(bMobs instance, World w)
+	public bMobsWorld(World w)
 	{
-		plugin = instance;
 		world = w;
-		active.add("nothing");
+	}
+	
+	public boolean isMobEnabled(String type)
+	{
+		for(Mob mob : mobs)
+		{
+			if(mob.type.equals(type))
+			{
+				if(mob.enabled == false)
+					return false;
+				else
+					return true;
+			}
+		}
+		return true;
 	}
 }

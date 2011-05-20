@@ -24,7 +24,10 @@ public class bMobsKillerTask implements Runnable
 			List<LivingEntity> entities = world.getValue().world.getLivingEntities();
 			for(LivingEntity entity : entities)
 			{
-				plugin.handleEntity(entity, world.getValue().world);
+				if(!plugin.handleEntity(entity, world.getValue().world))
+				{
+					// check to burn the mob
+				}
 			}
 		}
 	}
